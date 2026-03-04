@@ -7,9 +7,9 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(245, 245, 250, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(245, 245, 250, 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--border-color);
   padding: var(--space-md) 0;
 }
@@ -133,13 +133,67 @@
 }
 
 /* ---------- Filter / Category Bar ---------- */
+.filterContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) 0;
+}
+
 .filterBar {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  padding: var(--space-md) 0;
   overflow-x: auto;
   scrollbar-width: none;
+  flex: 1;
+}
+
+/* ---------- Category Manager Modal ---------- */
+.categoryManagerList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.categoryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.categoryRow:hover {
+  border-color: var(--glass-border);
+}
+
+.categoryInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.categoryIconLg {
+  font-size: 1.25rem;
+}
+
+.categoryLabelLg {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.categoryAddRow {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-color);
 }
 
 .filterBar::-webkit-scrollbar {
@@ -501,9 +555,14 @@
 
 /* ---------- Responsive ---------- */
 @media (max-width: 768px) {
+  .header {
+    padding: var(--space-sm) 0;
+  }
+
   .headerInner {
     flex-wrap: wrap;
     padding: 0 var(--space-md);
+    gap: var(--space-sm);
   }
 
   .searchWrapper {

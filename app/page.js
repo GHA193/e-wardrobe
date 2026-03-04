@@ -4,38 +4,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import translations from "@/lib/i18n";
 import s from "./page.module.css";
 
-// Default categories in case API call fails
-const FALLBACK_CATEGORIES = [
-  { value: "tops", label: "Tops", icon: "👕" },
-  { value: "bottoms", label: "Bottoms", icon: "👖" },
-  { value: "dresses", label: "Dresses", icon: "👗" },
-  { value: "outerwear", label: "Outerwear", icon: "🧥" },
-  { value: "shoes", label: "Shoes", icon: "👟" },
-  { value: "bags", label: "Bags", icon: "👜" },
-  { value: "accessories", label: "Accessories", icon: "⌚" },
-  { value: "sportswear", label: "Sportswear", icon: "🏃" },
-  { value: "underwear", label: "Underwear", icon: "🩲" },
-  { value: "other", label: "Other", icon: "📦" },
-];
-
-// Chinese labels for categories
-const CATEGORY_LABELS_ZH = {
-  tops: "上衣",
-  bottoms: "裤子",
-  dresses: "裙子",
-  outerwear: "外套",
-  shoes: "鞋子",
-  bags: "包包",
-  accessories: "配饰",
-  sportswear: "运动装",
-  underwear: "内衣",
-  other: "其他",
-};
-
 export default function HomePage() {
   // ---- State ----
   const [items, setItems] = useState([]);
-  const [categories, setCategories] = useState(FALLBACK_CATEGORIES);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,18 +15,18 @@ export default function HomePage() {
 
   // Language state: default to Chinese
   const [locale, setLocale] = useState("zh");
-  const t = (key) => translations[locale]?.[key] || translations.en[key] || key;
+  const t = useCallback((key) => translations[locale]?.[key] || translations.en[key] || key, [locale]);
 
-  // Get localized category label
-  const getCategoryLabel = (cat) => {
-    if (locale === "zh" && CATEGORY_LABELS_ZH[cat.value]) {
-      return CATEGORY_LABELS_ZH[cat.value];
-    }
+  // Get localized category label (only translates 'uncategorized')
+  const getCategoryLabel = useCallback((cat) => {
+    if (!cat) return "";
+    if (cat.value === "uncategorized") return t("uncategorized");
     return cat.label;
-  };
+  }, [t]);
 
   // Modal states
   const [showForm, setShowForm] = useState(false);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [detailItem, setDetailItem] = useState(null);
   const [toast, setToast] = useState(null);
@@ -66,14 +38,17 @@ export default function HomePage() {
   }, [searchQuery]);
 
   // ---- Fetch categories ----
-  useEffect(() => {
-    fetch("/api/categories")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setCategories(data);
-      })
-      .catch(() => { });
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await fetch("/api/categories");
+      const data = await res.json();
+      if (Array.isArray(data)) setCategories(data);
+    } catch { }
   }, []);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   // ---- Fetch items whenever filter or search changes ----
   const fetchItems = useCallback(async () => {
@@ -90,7 +65,7 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  }, [activeCategory, debouncedQuery]);
+  }, [activeCategory, debouncedQuery, t]);
 
   useEffect(() => {
     fetchItems();
@@ -217,22 +192,31 @@ export default function HomePage() {
         </div>
 
         {/* ===== Category Filter Chips ===== */}
-        <div className={s.filterBar}>
-          <button
-            className={`${s.filterChip} ${activeCategory === "all" ? s.filterChipActive : ""}`}
-            onClick={() => setActiveCategory("all")}
-          >
-            ✨ {t("all")}
-          </button>
-          {categories.map((cat) => (
+        <div className={s.filterContainer}>
+          <div className={s.filterBar}>
             <button
-              key={cat.value}
-              className={`${s.filterChip} ${activeCategory === cat.value ? s.filterChipActive : ""}`}
-              onClick={() => setActiveCategory(cat.value)}
+              className={`${s.filterChip} ${activeCategory === "all" ? s.filterChipActive : ""}`}
+              onClick={() => setActiveCategory("all")}
             >
-              {cat.icon} {getCategoryLabel(cat)}
+              ✨ {t("all")}
             </button>
-          ))}
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                className={`${s.filterChip} ${activeCategory === cat.value ? s.filterChipActive : ""}`}
+                onClick={() => setActiveCategory(cat.value)}
+              >
+                {cat.icon} {getCategoryLabel(cat)}
+              </button>
+            ))}
+          </div>
+          <button
+            className="btn btn-ghost"
+            style={{ flexShrink: 0, marginLeft: "var(--space-md)" }}
+            onClick={() => setShowCategoryManager(true)}
+          >
+            ⚙️ {t("manageCategories")}
+          </button>
         </div>
 
         {/* ===== Item Grid ===== */}
@@ -321,7 +305,6 @@ export default function HomePage() {
       {detailItem && (
         <DetailModal
           item={detailItem}
-          categories={categories}
           getCategoryInfo={getCategoryInfo}
           getCategoryLabel={getCategoryLabel}
           t={t}
@@ -350,6 +333,18 @@ export default function HomePage() {
         />
       )}
 
+      {/* ===== Category Manager Modal ===== */}
+      {showCategoryManager && (
+        <CategoryManagerModal
+          categories={categories}
+          fetchCategories={fetchCategories}
+          fetchItems={fetchItems}
+          getCategoryLabel={getCategoryLabel}
+          t={t}
+          onClose={() => setShowCategoryManager(false)}
+        />
+      )}
+
       {/* ===== Toast ===== */}
       {toast && (
         <div
@@ -359,6 +354,152 @@ export default function HomePage() {
         </div>
       )}
     </>
+  );
+}
+
+/* ============================================
+   Category Manager Modal Component
+   ============================================ */
+function CategoryManagerModal({ categories, fetchCategories, fetchItems, getCategoryLabel, t, onClose }) {
+  const [editingCatId, setEditingCatId] = useState(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [editIcon, setEditIcon] = useState("");
+
+  const [newLabel, setNewLabel] = useState("");
+  const [newIcon, setNewIcon] = useState("");
+
+  const handleSaveEdit = async (id) => {
+    if (!editLabel.trim() || !editIcon.trim()) return;
+    try {
+      await fetch(`/api/categories/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: editLabel, icon: editIcon }),
+      });
+      setEditingCatId(null);
+      fetchCategories();
+      fetchItems();
+    } catch {
+      alert("Error updating category");
+    }
+  };
+
+  const handleAdd = async () => {
+    if (!newLabel.trim() || !newIcon.trim()) return;
+    try {
+      await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: newLabel, icon: newIcon }),
+      });
+      setNewLabel("");
+      setNewIcon("");
+      fetchCategories();
+    } catch {
+      alert("Error adding category");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm(t("deleteCategoryConfirm"))) return;
+    try {
+      await fetch(`/api/categories/${id}`, { method: "DELETE" });
+      fetchCategories();
+      fetchItems();
+    } catch {
+      alert("Error deleting category");
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 500 }}>
+        <div className="modal-header">
+          <h2 className="modal-title">{t("manageCategories")}</h2>
+          <button className="btn btn-icon btn-ghost" onClick={onClose}>✕</button>
+        </div>
+
+        <div className={s.categoryManagerList}>
+          {categories.map((cat) => (
+            <div key={cat.id} className={s.categoryRow}>
+              {editingCatId === cat.id ? (
+                <div style={{ display: "flex", gap: 8, flex: 1 }}>
+                  <input
+                    className="input"
+                    value={editIcon}
+                    onChange={(e) => setEditIcon(e.target.value)}
+                    placeholder="Icon"
+                    style={{ width: "60px" }}
+                  />
+                  <input
+                    className="input"
+                    value={editLabel}
+                    onChange={(e) => setEditLabel(e.target.value)}
+                    placeholder="Name"
+                  />
+                  <button className="btn btn-primary" onClick={() => handleSaveEdit(cat.id)}>✓</button>
+                  <button className="btn btn-ghost" onClick={() => setEditingCatId(null)}>✕</button>
+                </div>
+              ) : (
+                <>
+                  <div className={s.categoryInfo}>
+                    <span className={s.categoryIconLg}>{cat.icon}</span>
+                    <span className={s.categoryLabelLg}>{getCategoryLabel(cat)}</span>
+                    {cat.is_system ? (
+                      <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginLeft: 8 }}>
+                        {t("systemCategory")}
+                      </span>
+                    ) : null}
+                  </div>
+                  {!cat.is_system && (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        className="btn btn-ghost"
+                        onClick={() => {
+                          setEditingCatId(cat.id);
+                          setEditLabel(cat.label);
+                          setEditIcon(cat.icon);
+                        }}
+                      >
+                        {t("edit")}
+                      </button>
+                      <button
+                        className="btn btn-danger"
+                        onClick={() => handleDelete(cat.id)}
+                      >
+                        {t("delete")}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className={s.categoryAddRow}>
+          <h4>{t("addCategory")}</h4>
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <input
+              className="input"
+              value={newIcon}
+              onChange={(e) => setNewIcon(e.target.value)}
+              placeholder={t("categoryIconPlaceholder")}
+              style={{ width: "80px" }}
+            />
+            <input
+              className="input"
+              value={newLabel}
+              onChange={(e) => setNewLabel(e.target.value)}
+              placeholder={t("categoryNamePlaceholder")}
+            />
+            <button className="btn btn-primary" onClick={handleAdd}>
+              ＋
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -445,7 +586,7 @@ function DetailModal({ item, getCategoryInfo, getCategoryLabel, t, onClose, onEd
 function FormModal({ item, categories, getCategoryLabel, t, onClose, onSave }) {
   const [form, setForm] = useState({
     image_url: item?.image_url || "",
-    category: item?.category || "tops",
+    category: item?.category || "uncategorized",
     brand: item?.brand || "",
     purchase_date: item?.purchase_date || "",
     size: item?.size || "",
@@ -686,3 +827,4 @@ function FormModal({ item, categories, getCategoryLabel, t, onClose, onSave }) {
     </div>
   );
 }
+
