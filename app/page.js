@@ -360,13 +360,24 @@ export default function HomePage() {
 /* ============================================
    Category Manager Modal Component
    ============================================ */
+
+const PRESET_EMOJIS = [
+  "👕", "👖", "👗", "🧥", "👚", "👔", "🩲", "🩱", "👙", "👘",
+  "🥻", "👟", "👞", "🥾", "🥿", "👠", "👡", "👢", "🎒", "👜",
+  "💼", "🧳", "👓", "🕶", "🧣", "🧤", "🧢", "👒", "🎩",
+  "🎓", "👑", "💍", "👝", "👛", "⌚", "⏱", "🌂", "☂", "📦",
+  "✨", "💎", "🏃", "🧦"
+];
+
 function CategoryManagerModal({ categories, fetchCategories, fetchItems, getCategoryLabel, t, onClose }) {
   const [editingCatId, setEditingCatId] = useState(null);
   const [editLabel, setEditLabel] = useState("");
   const [editIcon, setEditIcon] = useState("");
+  const [showEditEmojiPicker, setShowEditEmojiPicker] = useState(false);
 
   const [newLabel, setNewLabel] = useState("");
-  const [newIcon, setNewIcon] = useState("");
+  const [newIcon, setNewIcon] = useState(PRESET_EMOJIS[0]);
+  const [showNewEmojiPicker, setShowNewEmojiPicker] = useState(false);
 
   const handleSaveEdit = async (id) => {
     if (!editLabel.trim() || !editIcon.trim()) return;
@@ -377,6 +388,7 @@ function CategoryManagerModal({ categories, fetchCategories, fetchItems, getCate
         body: JSON.stringify({ label: editLabel, icon: editIcon }),
       });
       setEditingCatId(null);
+      setShowEditEmojiPicker(false);
       fetchCategories();
       fetchItems();
     } catch {
@@ -393,7 +405,8 @@ function CategoryManagerModal({ categories, fetchCategories, fetchItems, getCate
         body: JSON.stringify({ label: newLabel, icon: newIcon }),
       });
       setNewLabel("");
-      setNewIcon("");
+      setNewIcon(PRESET_EMOJIS[0]);
+      setShowNewEmojiPicker(false);
       fetchCategories();
     } catch {
       alert("Error adding category");
@@ -413,7 +426,11 @@ function CategoryManagerModal({ categories, fetchCategories, fetchItems, getCate
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 500 }}>
+      <div className="modal-content" onClick={(e) => {
+        e.stopPropagation();
+        setShowNewEmojiPicker(false);
+        setShowEditEmojiPicker(false);
+      }} style={{ maxWidth: 500 }}>
         <div className="modal-header">
           <h2 className="modal-title">{t("manageCategories")}</h2>
           <button className="btn btn-icon btn-ghost" onClick={onClose}>✕</button>
@@ -423,22 +440,44 @@ function CategoryManagerModal({ categories, fetchCategories, fetchItems, getCate
           {categories.map((cat) => (
             <div key={cat.id} className={s.categoryRow}>
               {editingCatId === cat.id ? (
-                <div style={{ display: "flex", gap: 8, flex: 1 }}>
-                  <input
-                    className="input"
-                    value={editIcon}
-                    onChange={(e) => setEditIcon(e.target.value)}
-                    placeholder="Icon"
-                    style={{ width: "60px" }}
-                  />
+                <div style={{ display: "flex", gap: 8, flex: 1, alignItems: "center", position: "relative" }}>
+                  <div className={s.emojiPickerContainer} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className={s.emojiSelectBtn}
+                      onClick={() => setShowEditEmojiPicker(!showEditEmojiPicker)}
+                    >
+                      {editIcon}
+                    </button>
+                    {showEditEmojiPicker && (
+                      <div className={s.emojiDropdown}>
+                        {PRESET_EMOJIS.map(emoji => (
+                          <div
+                            key={emoji}
+                            className={s.emojiOption}
+                            onClick={() => {
+                              setEditIcon(emoji);
+                              setShowEditEmojiPicker(false);
+                            }}
+                          >
+                            {emoji}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <input
                     className="input"
                     value={editLabel}
                     onChange={(e) => setEditLabel(e.target.value)}
                     placeholder="Name"
+                    style={{ flex: 1 }}
                   />
                   <button className="btn btn-primary" onClick={() => handleSaveEdit(cat.id)}>✓</button>
-                  <button className="btn btn-ghost" onClick={() => setEditingCatId(null)}>✕</button>
+                  <button className="btn btn-ghost" onClick={() => {
+                    setEditingCatId(null);
+                    setShowEditEmojiPicker(false);
+                  }}>✕</button>
                 </div>
               ) : (
                 <>
@@ -479,19 +518,39 @@ function CategoryManagerModal({ categories, fetchCategories, fetchItems, getCate
 
         <div className={s.categoryAddRow}>
           <h4>{t("addCategory")}</h4>
-          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <input
-              className="input"
-              value={newIcon}
-              onChange={(e) => setNewIcon(e.target.value)}
-              placeholder={t("categoryIconPlaceholder")}
-              style={{ width: "80px" }}
-            />
+          <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center", position: "relative" }}>
+            <div className={s.emojiPickerContainer} onClick={(e) => e.stopPropagation()}>
+              <button
+                className={s.emojiSelectBtn}
+                title={t("categoryIcon")}
+                onClick={() => setShowNewEmojiPicker(!showNewEmojiPicker)}
+              >
+                {newIcon}
+              </button>
+              {showNewEmojiPicker && (
+                <div className={`${s.emojiDropdown} ${s.emojiDropdownUp}`}>
+                  {PRESET_EMOJIS.map(emoji => (
+                    <div
+                      key={emoji}
+                      className={s.emojiOption}
+                      onClick={() => {
+                        setNewIcon(emoji);
+                        setShowNewEmojiPicker(false);
+                      }}
+                    >
+                      {emoji}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <input
               className="input"
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
               placeholder={t("categoryNamePlaceholder")}
+              style={{ flex: 1 }}
             />
             <button className="btn btn-primary" onClick={handleAdd}>
               ＋
