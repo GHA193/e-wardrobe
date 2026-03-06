@@ -69,7 +69,7 @@ e-wardrobe/
 │   ├── auth.js                   # Security utilities (scrypt hashing, session logic)
 │   ├── db.js                     # SQLite database singleton & initialization
 │   └── i18n.js                   # English and Chinese translation dictionaries
-├── middleware.js                 # Next.js global route interception for access control
+├── proxy.js                      # Next.js global route interception (formerly middleware) for access control
 ├── public/uploads/               # Uploaded images (gitignored)
 └── data/                         # SQLite database (gitignored)
 ```
