@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import translations from "@/lib/i18n";
 import s from "./page.module.css";
 
@@ -27,6 +28,7 @@ export default function HomePage() {
   // Modal states
   const [showForm, setShowForm] = useState(false);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [detailItem, setDetailItem] = useState(null);
   const [toast, setToast] = useState(null);
@@ -158,7 +160,9 @@ export default function HomePage() {
             >
               {t("langToggle")}
             </button>
+            <SettingsMenu t={t} onChangePassword={() => setShowChangePassword(true)} />
             <button
+
               id="add-item-btn"
               className="btn btn-primary"
               onClick={() => {
@@ -353,7 +357,133 @@ export default function HomePage() {
           {toast.type === "error" ? "❌" : "✅"} {toast.message}
         </div>
       )}
+
+      {/* Change Password Modal */}
+      {showChangePassword && (
+        <ChangePasswordModal
+          t={t}
+          onClose={() => setShowChangePassword(false)}
+          showToast={showToast}
+        />
+      )}
     </>
+  );
+}
+
+/* ============================================
+   Settings Menu Component
+   ============================================ */
+function SettingsMenu({ t, onChangePassword }) {
+  const [open, setOpen] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+  };
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        className="btn btn-icon btn-ghost"
+        onClick={() => setOpen(!open)}
+        title={t("settings")}
+      >
+        ⚙️
+      </button>
+      {open && (
+        <>
+          <div className={s.dropdownOverlay} onClick={() => setOpen(false)} />
+          <div className={s.settingsDropdown}>
+            <button
+              className={s.dropdownItem}
+              onClick={() => { setOpen(false); onChangePassword(); }}
+            >
+              🔒 {t("changePassword")}
+            </button>
+            <button
+              className={`${s.dropdownItem} ${s.dropdownItemDanger}`}
+              onClick={() => { setOpen(false); handleLogout(); }}
+            >
+              🚪 {t("logout")}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ============================================
+   Change Password Modal Component
+   ============================================ */
+function ChangePasswordModal({ t, onClose, showToast }) {
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!oldPassword || !newPassword) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldPassword, newPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      showToast(t("changePasswordSuccess"));
+      onClose();
+    } catch (err) {
+      alert(err.message || t("changePasswordError"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+        <div className="modal-header">
+          <h2 className="modal-title">{t("changePassword")}</h2>
+          <button className="btn btn-icon btn-ghost" onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div>
+            <label style={{ display: "block", marginBottom: 8, fontSize: "0.875rem", color: "var(--text-secondary)", fontWeight: 500 }}>
+              {t("oldPassword")}
+            </label>
+            <input
+              type="password"
+              className="input"
+              value={oldPassword}
+              onChange={e => setOldPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label style={{ display: "block", marginBottom: 8, fontSize: "0.875rem", color: "var(--text-secondary)", fontWeight: 500 }}>
+              {t("newPassword")}
+            </label>
+            <input
+              type="password"
+              className="input"
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              required
+            />
+            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: 6 }}>
+              {t("passwordRequirement")}
+            </div>
+          </div>
+          <button type="submit" className="btn btn-primary" style={{ marginTop: 8 }} disabled={saving}>
+            {saving ? "..." : t("changePassword")}
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }
 
