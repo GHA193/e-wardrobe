@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 // This function can be marked `async` if using `await` inside
-export function middleware(request) {
+export function proxy(request) {
     const { pathname } = request.nextUrl;
 
     // Public paths that do not require authentication
