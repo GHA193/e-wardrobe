@@ -264,8 +264,8 @@ export default function HomePage() {
                   <div className={s.itemOverlay}>
                     <div className={s.itemOverlayActions}>
                       <button
-                        className="btn btn-ghost"
-                        style={{ flex: 1, color: "#fff" }}
+                        className="btn btn-primary"
+                        style={{ flex: 1 }}
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditItem(item);
