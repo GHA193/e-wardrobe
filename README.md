@@ -1,5 +1,7 @@
 # E-Wardrobe — Your Digital Closet
 
+[**🇨🇳 简体中文**](./README_zh.md) | [**🇬🇧 English**](./README.md)
+
 A modern, premium digital wardrobe application to organize your clothing collection. Upload photos, categorize items, add detailed notes, and search through your entire wardrobe with ease.
 
 ## Features
