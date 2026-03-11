@@ -269,18 +269,24 @@ export default function HomePage() {
             </div>
           ) : items.length === 0 ? (
             <div className={s.emptyState}>
-              <div className={s.emptyIcon}>👔</div>
-              <div className={s.emptyTitle}>{t("emptyTitle")}</div>
-              <div className={s.emptyText}>{t("emptyText")}</div>
-              <button
-                className="btn btn-primary btn-lg"
-                onClick={() => {
-                  setEditItem(null);
-                  setShowForm(true);
-                }}
-              >
-                {t("addFirstItem")}
-              </button>
+              <div className={s.emptyIcon}>{activeCategory !== "all" || debouncedQuery ? "🔍" : "👔"}</div>
+              <div className={s.emptyTitle}>
+                {t(activeCategory !== "all" || debouncedQuery ? "noSearchResultsTitle" : "emptyTitle")}
+              </div>
+              <div className={s.emptyText}>
+                {t(activeCategory !== "all" || debouncedQuery ? "noSearchResultsText" : "emptyText")}
+              </div>
+              {!(activeCategory !== "all" || debouncedQuery) && (
+                <button
+                  className="btn btn-primary btn-lg"
+                  onClick={() => {
+                    setEditItem(null);
+                    setShowForm(true);
+                  }}
+                >
+                  {t("addFirstItem")}
+                </button>
+              )}
             </div>
           ) : (
             items.map((item) => (
