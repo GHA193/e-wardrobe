@@ -4,6 +4,9 @@
 
 A modern, premium digital wardrobe application to organize your clothing collection. Upload photos, categorize items, add detailed notes, and search through your entire wardrobe with ease.
 
+![Initialization Preview](./initialization.png)
+![Dashboard Preview](./dashboard.png)
+
 ## Features
 
 - **Image Management**: Upload and store clothing photos with drag-and-drop support.

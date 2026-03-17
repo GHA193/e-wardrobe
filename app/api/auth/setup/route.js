@@ -8,10 +8,14 @@ export async function POST(request) {
         }
 
         const body = await request.json();
-        const { username, password } = body;
+        const { username, password, confirmPassword } = body;
 
-        if (!username || !password) {
-            return NextResponse.json({ error: "Username and password are required" }, { status: 400 });
+        if (!username || !password || !confirmPassword) {
+            return NextResponse.json({ error: "Username and password fields are required" }, { status: 400 });
+        }
+
+        if (password !== confirmPassword) {
+            return NextResponse.json({ error: "Passwords do not match" }, { status: 400 });
         }
 
         const userId = createUser(username, password);

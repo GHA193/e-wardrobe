@@ -12,6 +12,7 @@ export default function LoginPage() {
 
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -19,8 +20,8 @@ export default function LoginPage() {
     const [locale, setLocale] = useState("zh");
 
     useEffect(() => {
-        const savedLang = localStorage.getItem("ew_lang");
-        if (savedLang) setLocale(savedLang);
+        const savedLang = localStorage.getItem("e-wardrobe-locale");
+        if (savedLang === "en" || savedLang === "zh") setLocale(savedLang);
 
         // Check system status
         fetch("/api/auth/status")
@@ -35,21 +36,34 @@ export default function LoginPage() {
             });
     }, []);
 
+    // Sync back to local storage when changed
+    useEffect(() => {
+        localStorage.setItem("e-wardrobe-locale", locale);
+    }, [locale]);
+
     const t = (key) => translations[locale]?.[key] || translations.en[key] || key;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!username || !password) return;
 
+        if (isSetup && password !== confirmPassword) {
+            setError(t("passwordsDoNotMatch"));
+            return;
+        }
+
         setIsSubmitting(true);
         setError("");
 
         try {
             const endpoint = isSetup ? "/api/auth/setup" : "/api/auth/login";
+            const bodyPayload = { username, password };
+            if (isSetup) bodyPayload.confirmPassword = confirmPassword;
+
             const res = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify(bodyPayload)
             });
 
             const data = await res.json();
@@ -74,6 +88,13 @@ export default function LoginPage() {
     return (
         <div className={s.container}>
             <div className={s.authCard}>
+                <button
+                    className={`btn btn-ghost ${s.langToggle}`}
+                    onClick={() => setLocale(locale === "zh" ? "en" : "zh")}
+                    title={locale === "zh" ? "Switch to English" : "切换为中文"}
+                >
+                    {t("langToggle")}
+                </button>
                 <div className={s.logoArea}>
                     <div className={s.logoIcon}>👗</div>
                     <h1 className={s.title}>{isSetup ? t("setupTitle") : t("loginTitle")}</h1>
@@ -102,8 +123,20 @@ export default function LoginPage() {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                         />
-                        {isSetup && <div className={s.hint}>{t("passwordRequirement")}</div>}
                     </div>
+                    {isSetup && (
+                        <div className={s.formGroup}>
+                            <label className={s.label}>{t("confirmPassword")}</label>
+                            <input
+                                type="password"
+                                className="input"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                required
+                            />
+                            <div className={s.hint}>{t("passwordRequirement")}</div>
+                        </div>
+                    )}
 
                     <button
                         type="submit"
