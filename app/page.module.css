@@ -115,7 +115,9 @@
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  width: 160px;
+  min-width: 160px;
+  width: max-content;
+  max-width: calc(100vw - var(--space-xl));
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
